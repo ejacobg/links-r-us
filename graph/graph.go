@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+// Because multiple services may be querying the graph, you may be served a copy of a link or edge.
+
 // Graph is implemented by objects that can mutate or query a link graph.
 type Graph interface {
 	// UpsertLink creates a new link or updates an existing link.
