@@ -12,19 +12,23 @@ import (
 // Compile-time check for ensuring InMemoryGraph implements Graph.
 var _ graph.Graph = (*InMemoryGraph)(nil)
 
-// edgeList contains the slice of edge UUIDs that originate from a link in the graph.
+// edgeList represents all of a link's outgoing edges. In other words, all the edges with this link as the source.
 type edgeList []uuid.UUID
 
 // InMemoryGraph implements an in-memory link graph that can be concurrently
 // accessed by multiple clients.
 type InMemoryGraph struct {
+	// Unlike sync.Mutex, sync.RWMutex supports multiple-reader semantics, good for read-heavy workloads.
 	mu sync.RWMutex
 
 	links map[uuid.UUID]*graph.Link
 	edges map[uuid.UUID]*graph.Edge
 
+	// Link URLs are expected to be unique. Use this to check for uniqueness.
 	linkFromURL map[string]*graph.Link
-	linkEdges   map[uuid.UUID]edgeList
+
+	// Used to easily obtain a link's outgoing edges.
+	linkEdges map[uuid.UUID]edgeList
 }
 
 // NewInMemoryGraph creates a new in-memory link graph.
@@ -39,6 +43,7 @@ func NewInMemoryGraph() *InMemoryGraph {
 
 // UpsertLink creates a new link or updates an existing link.
 func (im *InMemoryGraph) UpsertLink(link *graph.Link) error {
+	// Writes will always update the graph. Obtain a writer lock.
 	im.mu.Lock()
 	defer im.mu.Unlock()
 
@@ -91,6 +96,7 @@ func (im *InMemoryGraph) FindLink(id uuid.UUID) (*graph.Link, error) {
 // Links returns an iterator for the set of links whose IDs belong to the
 // [fromID, toID) range and were retrieved before the provided timestamp.
 func (im *InMemoryGraph) Links(fromID, toID uuid.UUID, retrievedBefore time.Time) (graph.LinkIterator, error) {
+	// UUID values can be compared directly (which is faster), however we are converting to strings for debugging purposes.
 	from, to := fromID.String(), toID.String()
 
 	im.mu.RLock()
@@ -119,7 +125,7 @@ func (im *InMemoryGraph) UpsertEdge(edge *graph.Edge) error {
 	// Scan the source's edge list to see if this edge has been recorded before.
 	for _, edgeID := range im.linkEdges[edge.Src] {
 		existing := im.edges[edgeID]
-		// Technically we don't need to check if the sources are the same since we did that in the above step.
+		// Technically we don't need to check if the sources are the same since all edges in the list have the same source.
 		if existing.Src == edge.Src && existing.Dst == edge.Dst {
 			// Update the timestamp and copy our saved data into this edge.
 			existing.UpdatedAt = time.Now()
@@ -157,6 +163,7 @@ func (im *InMemoryGraph) Edges(fromID, toID uuid.UUID, updatedBefore time.Time) 
 	im.mu.RLock()
 	var list []*graph.Edge
 	for linkID := range im.links {
+		// If a link does not fall within our range, then we can ignore all the edges originating from it.
 		if id := linkID.String(); id < from || id >= to {
 			continue
 		}

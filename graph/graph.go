@@ -5,7 +5,8 @@ import (
 	"time"
 )
 
-// Because multiple services may be querying the graph, you may be served a copy of a link or edge.
+// Because multiple services may be querying the graph, you may not receive a "live" copy of a link or page.
+// If this is the case, why don't we just return a normal Link or Edge, rather than a *Link or *Edge?
 
 // Graph is implemented by objects that can mutate or query a link graph.
 type Graph interface {
