@@ -4,7 +4,7 @@ import "github.com/ejacobg/links-r-us/graph"
 
 // edgeIterator is a graph.EdgeIterator implementation for the in-memory graph.
 type edgeIterator struct {
-	im *InMemoryGraph
+	g *Graph
 
 	edges []*graph.Edge
 	curr  int
@@ -33,9 +33,9 @@ func (i *edgeIterator) Close() error {
 func (i *edgeIterator) Edge() *graph.Edge {
 	// The edge pointer contents may be overwritten by a graph update; to
 	// avoid data-races we acquire the read lock first and clone the edge
-	i.im.mu.RLock()
+	i.g.mu.RLock()
 	edge := new(graph.Edge)
 	*edge = *i.edges[i.curr-1]
-	i.im.mu.RUnlock()
+	i.g.mu.RUnlock()
 	return edge
 }

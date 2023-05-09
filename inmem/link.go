@@ -4,7 +4,7 @@ import "github.com/ejacobg/links-r-us/graph"
 
 // linkIterator is a graph.LinkIterator implementation for the in-memory graph.
 type linkIterator struct {
-	im *InMemoryGraph
+	g *Graph
 
 	links []*graph.Link
 	curr  int
@@ -33,9 +33,9 @@ func (i *linkIterator) Close() error {
 func (i *linkIterator) Link() *graph.Link {
 	// The link pointer contents may be overwritten by a graph update; to
 	// avoid data-races we acquire the read lock first and clone the link
-	i.im.mu.RLock()
+	i.g.mu.RLock()
 	link := new(graph.Link)
 	*link = *i.links[i.curr-1]
-	i.im.mu.RUnlock()
+	i.g.mu.RUnlock()
 	return link
 }
