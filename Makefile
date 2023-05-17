@@ -1,30 +1,23 @@
 # Include variables from the .envrc file.
 include .envrc
 
-# CH06: CockroachDB migrations
-.PHONY: run-cdb-migrations migrate-check-deps check-cdb-env
+# ==================================================================================== #
+# HELPERS
+# ==================================================================================== #
 
-run-cdb-migrations: migrate-check-deps check-cdb-env
-	migrate -source file://Chapter06/linkgraph/store/cdb/migrations -database '$(subst postgresql,cockroach,${CDB_DSN})' up
+## help: print this help message
+.PHONY: help
+help:
+	@echo 'Usage:'
+	@sed -n 's/^##//p' ${MAKEFILE_LIST} | column -t -s ':' | sed -e 's/^/ /'
 
-migrate-check-deps:
-	@if [ -z `which migrate` ]; then \
-		echo "[go get] installing golang-migrate cmd with cockroachdb support";\
-		if [ "${GO111MODULE}" = "off" ]; then \
-			echo "[go get] installing github.com/golang-migrate/migrate/cmd/migrate"; \
-			go get -tags 'cockroachdb postgres' -u github.com/golang-migrate/migrate/cmd/migrate;\
-			go install -tags 'cockroachdb postgres' github.com/golang-migrate/migrate/cmd/migrate;\
-		else \
-			echo "[go get] installing github.com/golang-migrate/migrate/v4/cmd/migrate"; \
-			go get -tags 'cockroachdb postgres' -u github.com/golang-migrate/migrate/v4/cmd/migrate;\
-			go install -tags 'cockroachdb postgres' github.com/golang-migrate/migrate/v4/cmd/migrate;\
-		fi \
-	fi
-
+.PHONY: confirm
+confirm:
+	@echo -n 'Are you sure? [y/N] ' && read ans && [ $${ans:-N} = y ]
 
 define dsn_missing_error
 
-CDB_DSN envvar is undefined. To run the migrations this envvar
+CDB_DSN env var is undefined. To run the migrations this envvar
 must point to a cockroach db instance. For example, if you are
 running a local cockroachdb (with --insecure) and have created
 a database called 'linkgraph' you can define the envvar by
@@ -39,3 +32,37 @@ check-cdb-env:
 ifndef CDB_DSN
 	$(error ${dsn_missing_error})
 endif
+
+# ==================================================================================== #
+# DEVELOPMENT
+# ==================================================================================== #
+
+# test: run all tests
+.PHONY: test
+test:
+	@echo 'Running tests...'
+	go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
+
+# cdb/migrations/up: apply all CockroachDB migrations
+.PHONY: cdb/migrations/up
+cdb/migrations/up: confirm check-cdb-env
+	@echo 'Running up migrations...'
+	migrate -path ./cdb/migrations -database ${CDB_DSN} up
+
+# cdb/start: start a local CockroachDB instance. Stop with Ctrl-C.
+.PHONY: cdb/start
+cdb/start:
+	cockroach start-single-node --insecure --advertise-addr 127.0.0.1:26257
+
+# cdb/setup: create the linkgraph database; should only need to be run once
+.PHONY: cdb/setup
+cdb/setup:
+	cockroach sql --insecure -e "CREATE DATABASE linkgraph;"
+
+# es/start: start a local Elasticsearch instance. Stop with Ctrl-C.
+# Note: if using Linux, use bin/elasticsearch (not .bat)
+# Note 2: requires disabled security. Go to ${ES_HOME}/config/elasticsearch.yml and add this line:
+#	xpack.security.enabled: false
+.PHONY: es/start
+es/start:
+	${ES_HOME}/bin/elasticsearch.bat
