@@ -2,6 +2,10 @@ package pipeline
 
 import "context"
 
+// To make this generic, just make the Payload.Clone() method return T.
+// You would also have to allow different Payload[T] types for both the input and output channels.
+// A simple example: https://go.dev/play/p/5xwwGF-2SQo
+
 // Payload is implemented by values that can be sent through a pipeline.
 type Payload interface {
 	// Clone returns a new Payload that is a deep-copy of the original.
