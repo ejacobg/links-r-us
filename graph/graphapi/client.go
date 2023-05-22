@@ -10,6 +10,8 @@ import (
 	"time"
 )
 
+//go:generate mockgen -destination mocks/mock.go -package mocks github.com/ejacobg/links-r-us/graph/graphapi/proto LinkGraphClient,LinkGraph_LinksClient,LinkGraph_EdgesClient
+
 // LinkGraphClient provides an API compatible with the graph.Graph interface
 // for accessing graph instances exposed by a remote gRPC server.
 type LinkGraphClient struct {
