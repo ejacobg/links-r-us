@@ -66,3 +66,11 @@ cdb/setup:
 .PHONY: es/start
 es/start:
 	${ES_HOME}/bin/elasticsearch.bat
+
+# proto-deps: install protobuf and gRPC packages
+proto-deps:
+	@echo "[go get] ensuring protoc packages are available"
+	@go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+	@go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+	@go get google.golang.org/protobuf
+	@go get google.golang.org/grpc
