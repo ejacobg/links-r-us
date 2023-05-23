@@ -7,9 +7,9 @@ import (
 	"github.com/ejacobg/links-r-us/graph/graphapi/mocks"
 	"github.com/ejacobg/links-r-us/graph/graphapi/proto"
 	"github.com/golang/mock/gomock"
-	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/google/uuid"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	gc "gopkg.in/check.v1"
 	"io"
 	"time"
@@ -77,7 +77,7 @@ func (s *ClientTestSuite) TestUpsertEdge(c *gc.C) {
 			Uuid:      assignedID[:],
 			SrcUuid:   edge.Src[:],
 			DstUuid:   edge.Dst[:],
-			UpdatedAt: ptypes.TimestampNow(),
+			UpdatedAt: timestamppb.Now(),
 		},
 		nil,
 	)

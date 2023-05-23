@@ -1,9 +1,9 @@
 package graphapi_test
 
 import (
-	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/google/uuid"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	gc "gopkg.in/check.v1"
 	"testing"
 	"time"
@@ -18,13 +18,13 @@ func Test(t *testing.T) {
 }
 
 func mustEncodeTimestamp(c *gc.C, t time.Time) *timestamp.Timestamp {
-	ts, err := ptypes.TimestampProto(t)
-	c.Assert(err, gc.IsNil)
+	ts := timestamppb.New(t)
+	c.Assert(ts.CheckValid(), gc.IsNil)
 	return ts
 }
 
 func mustDecodeTimestamp(c *gc.C, ts *timestamp.Timestamp) time.Time {
-	t, err := ptypes.Timestamp(ts)
-	c.Assert(err, gc.IsNil)
+	t := ts.AsTime()
+	c.Assert(ts.CheckValid(), gc.IsNil)
 	return t
 }
