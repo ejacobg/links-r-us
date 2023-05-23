@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"github.com/ejacobg/links-r-us/index"
 	"github.com/ejacobg/links-r-us/index/indexapi/proto"
-	"github.com/golang/protobuf/ptypes"
 	"github.com/google/uuid"
 	"io"
 )
+
+//go:generate mockgen -package mocks -destination mocks/mock.go github.com/ejacobg/links-r-us/index/indexapi/proto TextIndexerClient,TextIndexer_SearchClient
 
 // TextIndexerClient provides an API compatible with the index.Indexer interface
 // for accessing a text indexer instances exposed by a remote gRPC server.
@@ -38,12 +39,11 @@ func (c *TextIndexerClient) Index(doc *index.Document) error {
 		return err
 	}
 
-	t, err := ptypes.Timestamp(res.IndexedAt)
-	if err != nil {
+	if err = res.IndexedAt.CheckValid(); err != nil {
 		return fmt.Errorf("unable to decode indexedAt attribute of document %q: %w", doc.LinkID, err)
 	}
 
-	doc.IndexedAt = t
+	doc.IndexedAt = res.IndexedAt.AsTime()
 	return nil
 }
 
@@ -121,12 +121,12 @@ func (it *resultIterator) Next() bool {
 
 	linkID := uuidFromBytes(resDoc.LinkId)
 
-	t, err := ptypes.Timestamp(resDoc.IndexedAt)
-	if err != nil {
+	if err = resDoc.IndexedAt.CheckValid(); err != nil {
 		it.cancelFn()
 		it.lastErr = fmt.Errorf("unable to decode indexedAt attribute of document %q: %w", linkID, err)
 		return false
 	}
+	t := resDoc.IndexedAt.AsTime()
 
 	it.next = &index.Document{
 		LinkID:    linkID,
