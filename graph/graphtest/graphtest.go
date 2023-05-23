@@ -241,9 +241,9 @@ func TestLinkIteratorTimeFilter(t *testing.T, g graph.Graph) {
 		linkInsertTimes[i] = time.Now()
 	}
 
-	for i, time := range linkInsertTimes {
+	for i, ts := range linkInsertTimes {
 		t.Logf("fetching links created before edge %d", i)
-		assertIteratedLinkIDsMatch(t, g, time, linkUUIDs[:i+1])
+		assertIteratedLinkIDsMatch(t, g, ts, linkUUIDs[:i+1])
 	}
 }
 
@@ -498,9 +498,9 @@ func TestEdgeIteratorTimeFilter(t *testing.T, g graph.Graph) {
 		edgeInsertTimes[i] = time.Now()
 	}
 
-	for i, time := range edgeInsertTimes {
+	for i, ts := range edgeInsertTimes {
 		t.Logf("fetching edges created before edge %d", i)
-		assertIteratedEdgeIDsMatch(t, g, time, edgeUUIDs[:i+1])
+		assertIteratedEdgeIDsMatch(t, g, ts, edgeUUIDs[:i+1])
 	}
 }
 
