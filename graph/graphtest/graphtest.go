@@ -237,6 +237,7 @@ func TestLinkIteratorTimeFilter(t *testing.T, g graph.Graph) {
 			t.Fatalf("failed to insert link: %v", err)
 		}
 		linkUUIDs[i] = link.ID
+		time.Sleep(time.Millisecond)
 		linkInsertTimes[i] = time.Now()
 	}
 
@@ -267,6 +268,14 @@ func assertIteratedLinkIDsMatch(t *testing.T, g graph.Graph, updatedBefore time.
 	sort.Slice(exp, func(l, r int) bool { return exp[l].String() < exp[r].String() })
 	if !cmp.Equal(got, exp) {
 		t.Errorf("iterated IDs do not match")
+		t.Log("got:")
+		for _, u := range got {
+			t.Logf("%s\n", u.String())
+		}
+		t.Log("want:")
+		for _, u := range exp {
+			t.Logf("%s\n", u.String())
+		}
 	}
 }
 
@@ -354,6 +363,8 @@ func TestUpsertEdge(t *testing.T, g graph.Graph) {
 		t.Errorf("UpdatedAt field not set")
 	}
 
+	time.Sleep(time.Millisecond)
+
 	// Update existing edge.
 	other := &graph.Edge{
 		ID:  edge.ID,
@@ -408,6 +419,8 @@ func TestConcurrentEdgeIterators(t *testing.T, g graph.Graph) {
 		}
 	}
 
+	time.Sleep(time.Millisecond)
+
 	wg.Add(numIterators)
 	for i := 0; i < numIterators; i++ {
 		go func(id int) {
@@ -430,7 +443,7 @@ func TestConcurrentEdgeIterators(t *testing.T, g graph.Graph) {
 				edge := it.Edge()
 				edgeID := edge.ID.String()
 				if seen[edgeID] {
-					t.Errorf("%s saw the same lnk twice", itTagComment)
+					t.Errorf("%s saw the same link twice", itTagComment)
 				}
 				seen[edgeID] = true
 			}
@@ -465,14 +478,12 @@ func TestConcurrentEdgeIterators(t *testing.T, g graph.Graph) {
 // edge iterator works as expected.
 func TestEdgeIteratorTimeFilter(t *testing.T, g graph.Graph) {
 	linkUUIDs := make([]uuid.UUID, 3)
-	linkInsertTimes := make([]time.Time, len(linkUUIDs))
 	for i := 0; i < len(linkUUIDs); i++ {
 		link := &graph.Link{URL: fmt.Sprint(i)}
 		if err := g.UpsertLink(link); err != nil {
 			t.Fatalf("failed to insert link: %v", err)
 		}
 		linkUUIDs[i] = link.ID
-		linkInsertTimes[i] = time.Now()
 	}
 
 	edgeUUIDs := make([]uuid.UUID, len(linkUUIDs))
@@ -483,6 +494,7 @@ func TestEdgeIteratorTimeFilter(t *testing.T, g graph.Graph) {
 			t.Fatalf("failed to insert edge: %v", err)
 		}
 		edgeUUIDs[i] = edge.ID
+		time.Sleep(time.Millisecond)
 		edgeInsertTimes[i] = time.Now()
 	}
 
@@ -604,14 +616,18 @@ func TestRemoveStaleEdges(t *testing.T, g graph.Graph) {
 	numEdges := 100
 	linkUUIDs := make([]uuid.UUID, numEdges*4)
 	goneUUIDs := make(map[uuid.UUID]struct{})
+
+	// Add links to the graph.
 	for i := 0; i < numEdges*4; i++ {
 		link := &graph.Link{URL: fmt.Sprint(i)}
 		if err := g.UpsertLink(link); err != nil {
 			t.Fatalf("failed to insert link: %v", err)
 		}
+		// Record the ID of each link that we add.
 		linkUUIDs[i] = link.ID
 	}
 
+	// Add all of our edges. All added edges will have link[0] as the source.
 	var lastTs time.Time
 	for i := 0; i < numEdges; i++ {
 		e1 := &graph.Edge{
@@ -621,12 +637,17 @@ func TestRemoveStaleEdges(t *testing.T, g graph.Graph) {
 		if err := g.UpsertEdge(e1); err != nil {
 			t.Fatalf("failed to insert edge: %v", err)
 		}
+		// Record the ID of each edge that we add. All the edges in this batch are expected to be removed, invalidating all of these IDs.
 		goneUUIDs[e1.ID] = struct{}{}
+		// Record the timestamp of the last edge that was added.
 		lastTs = e1.UpdatedAt
 	}
 
+	// Record a timestamp that is after the last edge that was added in the first batch.
 	deleteBefore := lastTs.Add(time.Millisecond)
-	time.Sleep(250 * time.Millisecond)
+
+	// Use a small delay to guarantee that all edges in the second batch are after the recorded timestamp.
+	time.Sleep(time.Millisecond)
 
 	// The following edges will have an updated at value > lastTs
 	for i := 0; i < numEdges; i++ {
@@ -639,9 +660,13 @@ func TestRemoveStaleEdges(t *testing.T, g graph.Graph) {
 		}
 	}
 
+	// This should remove all the edges from the first batch.
 	if err := g.RemoveStaleEdges(linkUUIDs[0], deleteBefore); err != nil {
 		t.Errorf("failed to remove stale edges: %v", err)
 	}
+
+	// Use a small delay to guarantee that we see all the current edges.
+	time.Sleep(time.Millisecond)
 
 	it, err := partitionedEdgeIterator(t, g, 0, 1, time.Now())
 	if err != nil {
