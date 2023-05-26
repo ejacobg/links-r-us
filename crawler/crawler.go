@@ -14,7 +14,7 @@ type Config struct {
 	// A URLGetter instance for fetching links.
 	URLGetter URLGetter
 
-	// A GraphUpdater instance for addding new links to the link graph.
+	// A GraphUpdater instance for adding new links to the link graph.
 	Graph Graph
 
 	// A TextIndexer instance for indexing the content of each retrieved link.
