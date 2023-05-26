@@ -2,7 +2,7 @@ package bsp
 
 import (
 	"errors"
-	"golang.org/x/xerrors"
+	"fmt"
 	"sync"
 	"sync/atomic"
 )
@@ -88,7 +88,7 @@ type Graph struct {
 // when they are done using it.
 func NewGraph(cfg GraphConfig) (*Graph, error) {
 	if err := cfg.validate(); err != nil {
-		return nil, xerrors.Errorf("graph config validation failed: %w", err)
+		return nil, fmt.Errorf("graph config validation failed: %w", err)
 	}
 
 	g := &Graph{
@@ -117,7 +117,7 @@ func (g *Graph) Reset() error {
 	for _, v := range g.vertices {
 		for i := 0; i < 2; i++ {
 			if err := v.msgQueue[i].Close(); err != nil {
-				return xerrors.Errorf("closing message queue #%d for vertex %v: %w", i, v.ID(), err)
+				return fmt.Errorf("closing message queue #%d for vertex %v: %w", i, v.ID(), err)
 			}
 		}
 	}
@@ -156,7 +156,7 @@ func (g *Graph) AddVertex(id string, initValue interface{}) {
 func (g *Graph) AddEdge(srcID, dstID string, initValue interface{}) error {
 	srcVert := g.vertices[srcID]
 	if srcVert == nil {
-		return xerrors.Errorf("create edge from %q to %q: %w", srcID, dstID, ErrUnknownEdgeSource)
+		return fmt.Errorf("create edge from %q to %q: %w", srcID, dstID, ErrUnknownEdgeSource)
 	}
 
 	srcVert.edges = append(srcVert.edges, &Edge{
@@ -222,12 +222,12 @@ func (g *Graph) SendMessage(dstID string, msg Message) error {
 	// that is processed at another node. If a remote relayer has been
 	// configured delegate the message send operation to it.
 	if g.relayer != nil {
-		if err := g.relayer.Relay(dstID, msg); !xerrors.Is(err, ErrDestinationIsLocal) {
+		if err := g.relayer.Relay(dstID, msg); !errors.Is(err, ErrDestinationIsLocal) {
 			return err
 		}
 	}
 
-	return xerrors.Errorf("message cannot be delivered to %q: %w", dstID, ErrInvalidMessageDestination)
+	return fmt.Errorf("message cannot be delivered to %q: %w", dstID, ErrInvalidMessageDestination)
 }
 
 // Superstep returns the current superstep value.
@@ -285,9 +285,9 @@ func (g *Graph) stepWorker() {
 			_ = atomic.AddInt64(&g.activeInStep, 1)
 			v.active = true
 			if err := g.computeFn(g, v, v.msgQueue[buffer].Messages()); err != nil {
-				tryEmitError(g.errCh, xerrors.Errorf("running compute function for vertex %q failed: %w", v.ID(), err))
+				tryEmitError(g.errCh, fmt.Errorf("running compute function for vertex %q failed: %w", v.ID(), err))
 			} else if err := v.msgQueue[buffer].DiscardMessages(); err != nil {
-				tryEmitError(g.errCh, xerrors.Errorf("discarding unprocessed messages for vertex %q failed: %w", v.ID(), err))
+				tryEmitError(g.errCh, fmt.Errorf("discarding unprocessed messages for vertex %q failed: %w", v.ID(), err))
 			}
 		}
 		if atomic.AddInt64(&g.pendingInStep, -1) == 0 {
