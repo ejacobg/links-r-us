@@ -13,7 +13,7 @@ import (
 
 var _ = gc.Suite(new(CalculatorTestSuite))
 
-func Test(t *testing.T) {
+func TestCalculator(t *testing.T) {
 	// Run all gocheck test-suites
 	gc.TestingT(t)
 }
