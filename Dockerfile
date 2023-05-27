@@ -1,5 +1,5 @@
 # Denote the base container we will start with, and alias it using AS.
-FROM golang:1.13 AS builder
+FROM golang:1.20 AS builder
 
 # Create a new directory to hold our source code.
 WORKDIR $GOPATH/src/github.com/ejacobg/links-r-us

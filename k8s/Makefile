@@ -1,8 +1,10 @@
 .PHONY: help bootstrap-minikube purge deploy k8s-data-namespace helm-es-service helm-cdb-service dockerize-and-push
 
 SHELL=/bin/bash -o pipefail
-ES_VERSION ?= 7.4.0
-CDB_VERSION ?= v19.1.5
+
+# Update these with their correct versions.
+ES_VERSION ?= 8.7.1
+CDB_VERSION ?= v22.2.9
 MINIKUBE_RAM ?= 5g
 MINIKUBE_CPUS ?= 3
 MINIKUBE_K8S_VERSION ?= 1.15.3
@@ -83,5 +85,5 @@ helm-cdb-service: k8s-data-namespace
 	fi
 
 dockerize-and-push:
-	@make -C ../cdb-schema dockerize-and-push
-	@make -C ../linksrus dockerize-and-push
+	@make -C ../cdb dockerize-and-push
+	@make -C ../ dockerize-and-push
