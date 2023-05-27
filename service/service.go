@@ -43,14 +43,18 @@ func (g Group) Run(ctx context.Context) error {
 		}(s)
 	}
 
-	// Keep running until the run context gets cancelled; then wait for
-	// all spawned service go-routines to exit
+	// There are only two cases where a service will exit:
+	// 	(1) The context is cancelled.
+	// 	(2) An error occurs.
+	// In both cases, the Done channel will be closed, unblocking this routine.
 	<-runCtx.Done()
+
+	// Wait for the cancellation to propagate to all goroutines.
 	wg.Wait()
 
 	// Collect and accumulate any reported errors.
 	var err error
-	close(errCh)
+	close(errCh) // Close the channel so that the loop ends when we read all errors in the buffer.
 	for srvErr := range errCh {
 		err = multierror.Append(err, srvErr)
 	}
