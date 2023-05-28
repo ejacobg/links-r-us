@@ -108,7 +108,7 @@ dockerize:
 	@docker build --file ./Dockerfile \
 		--tag ${PREFIX}${IMAGE}:latest \
 		--tag ${PREFIX}${IMAGE}:${SHA} \
-		../../ 2>&1 | sed -e "s/^/ | /g"
+		. 2>&1 | sed -e "s/^/ | /g"
 
 .PHONY: push
 push:

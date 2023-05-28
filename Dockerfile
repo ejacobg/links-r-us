@@ -8,8 +8,9 @@ WORKDIR $GOPATH/src/github.com/ejacobg/links-r-us
 COPY . .
 
 # Use the `deps` target to install all of our package dependencies.
+# RUN make deps
 # Alternatively, you can use `go get ./...` or `go mod download` (1.14+).
-RUN make deps
+RUN go mod download
 
 # Compile the application and place it in the `/go/bin/linksrus-monolith` directory.
 # We grab the short GIT SHA of the current commit and inject into the `main.appSha` variable using the -X flag.
@@ -22,7 +23,7 @@ RUN GIT_SHA=$(git rev-parse --short HEAD) && \
     go build -a \
     -ldflags "-extldflags '-static' -w -s -X main.appSha=$GIT_SHA" \
     -o /go/bin/linksrus-monolith \
-    $PATH_TO_APP
+    github.com/ejacobg/links-r-us/cmd/monolith
 # Note: change the above path to your own application.
 
 # Build the final container that will contain only the finished binary and any other dependencies.
