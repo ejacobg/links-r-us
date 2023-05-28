@@ -62,8 +62,8 @@ make dockerize-and-push
 
 The above make command builds:
 
-- A helper container for applying the CockroachDB [schema](../cdb-schema) for the link-graph database.
-- The monolithic Links 'R' Us [application](../linksrus).
+- A helper container for applying the CockroachDB [schema](../cdb) for the link-graph database.
+- The monolithic Links 'R' Us [application](..).
 
 # Deploying the Links 'R' Us project to kubernetes
 
