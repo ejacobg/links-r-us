@@ -7,7 +7,7 @@ ES_VERSION ?= 8.7.1
 CDB_VERSION ?= v22.2.9
 MINIKUBE_RAM ?= 5g
 MINIKUBE_CPUS ?= 3
-MINIKUBE_K8S_VERSION ?= 1.15.3
+MINIKUBE_K8S_VERSION ?= 1.26.5 # https://kubernetes.io/docs/tasks/tools/install-kubectl-windows/#before-you-begin
 MINIKUBE_DRIVER ?= virtualbox
 
 help:
@@ -22,14 +22,15 @@ help:
 
 bootstrap-minikube:
 	@echo "[minikube] bootstrapping (driver: ${MINIKUBE_DRIVER}, network-plugin: cni) cluster with kubernetes ${MINIKUBE_K8S_VERSION} and reserving ${MINIKUBE_RAM} of RAM and ${MINIKUBE_CPUS} CPU(s)"
-	@minikube start --vm-driver=${MINIKUBE_DRIVER} --network-plugin=cni --kubernetes-version=${MINIKUBE_K8S_VERSION} --memory=${MINIKUBE_RAM} --cpus=${MINIKUBE_CPUS} 2>&1 | sed -e 's/^/ | /g'
-	@echo "[helm] bootstrapping"
-	@helm init 2>&1 | sed -e 's/^/ | /g'
+	@minikube start --vm-driver=${MINIKUBE_DRIVER} --network-plugin=cni --kubernetes-version=${MINIKUBE_K8S_VERSION} --memory=${MINIKUBE_RAM} --cpus=${MINIKUBE_CPUS} --no-vtx-check 2>&1 | sed -e 's/^/ | /g'
+#	@echo "[helm] bootstrapping" (no longer needed as of helm v3: https://helm.sh/docs/topics/v2_v3_migration/)
+#	@helm init 2>&1 | sed -e 's/^/ | /g'
 	@echo "[minikube] enabling addons: registry, ingress"
 	@(minikube addons enable registry 2>&1 || true) | sed -e 's/^/ | /g'
 	@(minikube addons enable ingress 2>&1 || true) | sed -e 's/^/ | /g'
-	@echo "[calico] installing manifests"
-	@kubectl apply -f https://docs.projectcalico.org/v3.10/manifests/calico.yaml 2>&1 | sed -e 's/^/ | /g'
+	@echo "[calico] installing manifests" # see https://docs.tigera.io/calico/latest/getting-started/kubernetes/self-managed-onprem/onpremises
+#	@curl https://raw.githubusercontent.com/projectcalico/calico/v3.26.0/manifests/calico.yaml -O
+	@kubectl apply -f calico.yaml 2>&1 | sed -e 's/^/ | /g'
 	@echo
 	@echo "IMPORTANT NOTICE:"
 	@echo "Please make sure to add '"`minikube ip`":5000' as a trusted"
