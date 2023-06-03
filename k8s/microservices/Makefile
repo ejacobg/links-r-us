@@ -81,9 +81,9 @@ helm-cdb-service: k8s-data-namespace
 	fi
 
 dockerize-and-push: 
-	@make -C ../../Chapter10/cdb-schema dockerize-and-push
-	@make -C ../linksrus/crawler dockerize-and-push
-	@make -C ../linksrus/frontend dockerize-and-push
-	@make -C ../linksrus/linkgraph dockerize-and-push
-	@make -C ../linksrus/pagerank dockerize-and-push
-	@make -C ../linksrus/textindexer dockerize-and-push
+	@make -C ../../cdb dockerize-and-push
+	@make -C ../../cmd/microservices/crawler dockerize-and-push
+	@make -C ../../cmd/microservices/frontend dockerize-and-push
+	@make -C ../../cmd/microservices/linkgraph dockerize-and-push
+	@make -C ../../cmd/microservices/pagerank dockerize-and-push
+	@make -C ../../cmd/microservices/textindexer dockerize-and-push
