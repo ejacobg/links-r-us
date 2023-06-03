@@ -65,7 +65,7 @@ func (p *Pipeline) Process(ctx context.Context, source Source, sink Sink) error 
 
 	// All stages plus the source and the sink can produce errors.
 	// All errors are written to the same error bus.
-	// We buffer this channel to be able to hold at least 1 error for each stage (plus the source/sink).
+	// We buffer this channel to be able to hold at most 1 error for each stage (plus the source/sink).
 	errCh := make(chan error, len(p.stages)+2)
 
 	// Start a worker for each stage, similar to how we did it in broadcast.Run().

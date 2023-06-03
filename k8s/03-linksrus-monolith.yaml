@@ -1,12 +1,14 @@
-apiVersion: networking.k8s.io/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: linksrus-ingress
   namespace: linksrus
 spec:
-  backend:
-    serviceName: linksrus-frontend
-    servicePort: 80
+  defaultBackend:
+    service:
+      name: linksrus-frontend
+      port:
+        number: 80
 ---
 # A service with a cluster IP that serves as a load-balancer for the frontend
 # pods. It is exposed outside the cluster via the above ingress resource.

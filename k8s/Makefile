@@ -1,9 +1,12 @@
+# See https://youtu.be/Oevqe9kKkKc for an example.
+
 .PHONY: help bootstrap-minikube purge deploy k8s-data-namespace helm-es-service helm-cdb-service dockerize-and-push
 
 SHELL=/bin/bash -o pipefail
 
 # Update these with their correct versions.
 ES_VERSION ?= 8.7.1
+# remove the 'v'?
 CDB_VERSION ?= v22.2.9
 MINIKUBE_RAM ?= 5g
 MINIKUBE_CPUS ?= 3
@@ -20,6 +23,7 @@ help:
 	@echo "- dockerize-and-push : dockerize and push all required images"
 	@echo ""
 
+# Make the cluster gets provisioned correctly, and that all addons are enabled. You may need to rerun some commands.
 bootstrap-minikube:
 	@echo "[minikube] bootstrapping (driver: ${MINIKUBE_DRIVER}, network-plugin: cni) cluster with kubernetes ${MINIKUBE_K8S_VERSION} and reserving ${MINIKUBE_RAM} of RAM and ${MINIKUBE_CPUS} CPU(s)"
 	@minikube start --vm-driver=${MINIKUBE_DRIVER} --network-plugin=cni --kubernetes-version=${MINIKUBE_K8S_VERSION} --memory=${MINIKUBE_RAM} --cpus=${MINIKUBE_CPUS} --no-vtx-check 2>&1 | sed -e 's/^/ | /g'
@@ -28,6 +32,9 @@ bootstrap-minikube:
 	@echo "[minikube] enabling addons: registry, ingress"
 	@(minikube addons enable registry 2>&1 || true) | sed -e 's/^/ | /g'
 	@(minikube addons enable ingress 2>&1 || true) | sed -e 's/^/ | /g'
+	@echo "[minikube] enabling addons for Elasticsearch" # See https://github.com/elastic/helm-charts/tree/main/elasticsearch/examples/minikube#requirements
+	@(minikube addons enable default-storageclass 2>&1 || true) | sed -e 's/^/ | /g'
+	@(minikube addons enable storage-provisioner 2>&1 || true) | sed -e 's/^/ | /g'
 	@echo "[calico] installing manifests" # see https://docs.tigera.io/calico/latest/getting-started/kubernetes/self-managed-onprem/onpremises
 #	@curl https://raw.githubusercontent.com/projectcalico/calico/v3.26.0/manifests/calico.yaml -O
 	@kubectl apply -f calico.yaml 2>&1 | sed -e 's/^/ | /g'
@@ -50,10 +57,13 @@ bootstrap-minikube:
 
 purge:
 	@echo "[kubectl] removing helm deployments for CDB/ES"
-	@helm delete --purge es 2>&1 | sed -e 's/^/ | /g' || true
-	@helm delete --purge cdb 2>&1 | sed -e 's/^/ | /g' || true
+	@helm uninstall elastic 2>&1 | sed -e 's/^/ | /g' || true
+	@helm uninstall cockroachdb 2>&1 | sed -e 's/^/ | /g' || true
 	@echo "[kubectl] removing remaining resources"
 	@kubectl delete -f . 2>&1 | sed -e 's/^/ | /g' || true
+# docker system prune
+# wait a bit since the above command will write to some logs
+# minikube delete
 
 deploy: k8s-data-namespace helm-es-service helm-cdb-service
 	@echo "[kubectl] deploying linksrus"
@@ -65,25 +75,34 @@ k8s-data-namespace:
 		kubectl apply -f 01-namespaces.yaml 2>&1 | sed -e 's/^/ | /g';\
 	fi
 
+# See https://github.com/elastic/helm-charts/tree/main/elasticsearch
 helm-es-service: k8s-data-namespace
-	@if [[ `kubectl -n linksrus-data get pods -l release=es 2>/dev/null | wc -l` -eq '0' ]]; then \
+	@if [[ `kubectl -n linksrus-data get pods -l release=elasticsearch 2>/dev/null | wc -l` -eq '0' ]]; then \
 		echo "[helm] installing elasticsearch (${ES_VERSION})";\
 		echo "[helm] adding chart repos";\
 		helm repo add elastic https://helm.elastic.co 2>&1 | sed -e 's/^/ | /g';\
-		helm install --namespace=linksrus-data --name es \
+		helm repo update 2>&1 | sed -e 's/^/ | /g'; \
+		helm install elasticsearch elastic/elasticsearch \
+			--namespace=linksrus-data \
 			--values chart-settings/es-settings.yaml \
-			--set imageTag=${ES_VERSION} \
-			elastic/elasticsearch 2>&1 | sed -e 's/^/ | /g';\
+			--set imageTag=${ES_VERSION} 2>&1 | sed -e 's/^/ | /g';\
 	fi
 
+# See https://www.cockroachlabs.com/docs/stable/deploy-cockroachdb-with-kubernetes-insecure.html
 helm-cdb-service: k8s-data-namespace
 	@if [[ `kubectl -n linksrus-data get pods -l release=cdb 2>/dev/null | wc -l` -eq '0' ]]; then \
 		echo "[helm] installing cockroackdb (${CDB_VERSION})";\
-		helm install --namespace=linksrus-data --name cdb \
+		helm repo add cockroachdb https://charts.cockroachdb.com/ 2>&1 | sed -e 's/^/ | /g'; \
+		helm repo update 2>&1 | sed -e 's/^/ | /g'; \
+		helm install cdb cockroachdb/cockroachdb \
+			--namespace=linksrus-data \
 			--values chart-settings/cdb-settings.yaml \
-			--set ImageTag=${CDB_VERSION} \
-			stable/cockroachdb 2>&1 | sed -e 's/^/ | /g';\
+			--set ImageTag=${CDB_VERSION} 2>&1 | sed -e 's/^/ | /g';\
 	fi
+
+# kubectl -n linksrus-data get pods
+# kubectl -n linksrus-data logs cdb-ensure-schema-<id>
+# kubectl -n linksrus-data delete pod cdb-ensure-schema-<id>
 
 dockerize-and-push:
 	@make -C ../cdb dockerize-and-push
