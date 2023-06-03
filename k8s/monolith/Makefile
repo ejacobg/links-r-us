@@ -105,5 +105,5 @@ helm-cdb-service: k8s-data-namespace
 # kubectl -n linksrus-data delete pod cdb-ensure-schema-<id>
 
 dockerize-and-push:
-	@make -C ../cdb dockerize-and-push
-	@make -C ../ dockerize-and-push
+	@make -C ../../cdb dockerize-and-push
+	@make -C ../../ dockerize-and-push
