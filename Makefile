@@ -62,12 +62,6 @@ test:
 	@echo 'Running tests...'
 	go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
 
-# cdb/migrations/up: apply all CockroachDB migrations
-.PHONY: cdb/migrations/up
-cdb/migrations/up: confirm check-cdb-env
-	@echo 'Running up migrations...'
-	migrate -path ./cdb/migrations -database ${CDB_DSN} up
-
 # cdb/start: start a local CockroachDB instance. Stop with Ctrl-C.
 .PHONY: cdb/start
 cdb/start:
@@ -77,6 +71,12 @@ cdb/start:
 .PHONY: cdb/setup
 cdb/setup:
 	cockroach sql --insecure -e "CREATE DATABASE linkgraph;"
+
+# cdb/migrations/up: apply all CockroachDB migrations
+.PHONY: cdb/migrations/up
+cdb/migrations/up: confirm check-cdb-env
+	@echo 'Running up migrations...'
+	migrate -path ./cdb/migrations -database ${CDB_DSN} up
 
 # es/start: start a local Elasticsearch instance. Stop with Ctrl-C.
 # Note: if using Linux, use bin/elasticsearch (not .bat)

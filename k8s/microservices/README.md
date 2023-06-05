@@ -62,12 +62,12 @@ make dockerize-and-push
 
 The above make command builds:
 
-- A helper container for applying the CockroachDB [schema](../../Chapter10/cdb-schema) for the link-graph database.
-- The [front-end](../linksrus/frontend) service.
-- The [crawler](../linksrus/crawler) service.
-- The [PageRank calculator](../linksrus/pagerank) service.
-- The [link-graph](../linksrus/linkgraph) service.
-- The [text indexer](../linksrus/textindexer) service.
+- A helper container for applying the CockroachDB [schema](../../cdb) for the link-graph database.
+- The [front-end](../../cmd/microservices/frontend) service.
+- The [crawler](../../cmd/microservices/crawler) service.
+- The [PageRank calculator](../../cmd/microservices/pagerank) service.
+- The [link-graph](../../cmd/microservices/graph) service.
+- The [text indexer](../../cmd/microservices/index) service.
 
 # Deploying the Links 'R' Us project to kubernetes
 
